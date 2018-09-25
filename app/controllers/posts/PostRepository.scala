@@ -3,6 +3,7 @@ package controllers.posts
 import com.google.inject.Inject
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 /**
   * A "persistance" layer for the [[Post]]
@@ -22,21 +23,52 @@ class PostRepository @Inject()(
 
   def find(id: Int): Future[Option[Post]] = {
     Future {
-      posts.find(_.id == id)
+      posts.find(_.id == id)    
     }
   }
 
   def findAll: Future[Seq[Post]] = {
     Future {
-      posts
+      posts.sortBy(post => post.id)
     }
   }
 
   def insert(post: Post): Future[Post] = {
     Future {
-      posts += post
-      post
-    }
+
+      if (false == posts.exists(x => x.id == post.id)) {
+        posts += post
+        post
+
+      } else {
+        throw new Exception
+      }
+    } 
   }
 
+  def update(post: Post): Future[Post] = {
+    Future {
+
+      posts.find(_.id == post.id) match {
+        case Some(element) => 
+          posts -= element
+          posts += post
+          post
+
+        case None => throw new Exception
+      }
+    }
+  } 
+
+  def delete(id: Int): Future[Post] = {
+    Future {
+      posts.find(_.id == id) match {
+        case Some(element) => 
+          posts -= element
+          element
+
+        case None => throw new Exception
+      }
+    }
+  } 
 }

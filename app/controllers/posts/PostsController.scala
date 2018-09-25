@@ -4,6 +4,7 @@ import javax.inject.Inject
 import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Request}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class PostsController @Inject()(
                                  cc: ControllerComponents,
@@ -29,15 +30,19 @@ class PostsController @Inject()(
     val postResult = request.body.validate[Post]
     postResult.fold(
       errors => {
-        Future.successful {
-          BadRequest(Json.obj("status" ->"400", "message" -> JsError.toJson(errors)))
+        Future {
+          BadRequest(Json.obj("status" -> 400, "message" -> JsError.toJson(errors)))
         }
       },
       post => {
-        postRepository.insert(post).map(persisted => Ok(Json.toJson(persisted)))
-      }
-    )
-  }
+        postRepository.insert(post).map {
+          persisted => Ok(Json.obj("status" -> 200, "data" -> Json.toJson(persisted)))
+
+        } recover {
+          case e:Exception => 
+            BadRequest(Json.obj("status" -> 400, "message" -> "Id is already in use" ))
+        }
+  }) }
 
   /**
     * This returns a Json Array with a list of all Posts.
@@ -46,7 +51,7 @@ class PostsController @Inject()(
     */
   def readAll(): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
     postRepository.findAll.map { posts =>
-      val json = Json.toJson(posts)
+      val json = Json.obj("status" -> 200, "data" -> Json.toJson(posts))
       Ok(json)
     }
   }
@@ -62,7 +67,10 @@ class PostsController @Inject()(
     *
     */
   def readSingle(id: Int): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
-    ???
+    postRepository.find(id).map { 
+      case Some(post) => Ok(Json.obj("status" -> 200, "data" -> Json.toJson(post)))
+      case None => NotFound(Json.obj("status" -> 404, "message" -> "Post not found" ))
+    }
   }
 
   /**
@@ -71,7 +79,14 @@ class PostsController @Inject()(
     * TODO Deletes the post with the given id.
     */
   def delete(id: Int): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
-    ???
+
+    postRepository.delete(id).map { 
+      post => Ok(Json.obj("status" -> 200, "data" -> Json.toJson(post)))
+
+    } recover {
+      case e:Exception => 
+        NotFound(Json.obj("status" -> 404, "message" -> "Post not found" ))
+    }
   }
 
   /**
@@ -81,8 +96,24 @@ class PostsController @Inject()(
     * TODO Changing the id of a post must not possible.
     */
   def update(id: Int): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    ???
+
+    val postResult = request.body.validate[Post]
+    postResult.fold(
+      errors => {
+        Future {
+          BadRequest(Json.obj("status" -> 400, "message" -> JsError.toJson(errors)))
+        }
+      },
+      post => {
+
+        val modifiedPost = Post(id, post.title, post.body)
+        postRepository.update(modifiedPost).map {
+          persisted => Ok(Json.obj("status" -> 200, "data" -> Json.toJson(modifiedPost)))
+
+        } recover {
+          case e:Exception => 
+            NotFound(Json.obj("status" -> 404, "message" -> "Post not found" ))
+        }
+    }) 
   }
-
-
 }
