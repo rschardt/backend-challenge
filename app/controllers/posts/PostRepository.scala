@@ -46,8 +46,6 @@ class PostRepository @Inject()(
     } 
   }
 
-  def 
-
   def update(post: Post): Future[Post] = {
     Future {
 
