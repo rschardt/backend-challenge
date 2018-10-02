@@ -3,7 +3,6 @@ package controllers.posts
 import com.google.inject.Inject
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 /**
   * A "persistance" layer for the [[Post]]
@@ -16,6 +15,7 @@ class PostRepository @Inject()(
     * This is the place where all posts are stored. You may change the type, but stick to solution form the
     * scala-std-library.
     */
+
   private val posts: ListBuffer[Post] = ListBuffer(
     Post(1, "Title 1", "Body 1"),
     Post(2, "Title 2", "Body 2")
@@ -36,15 +36,17 @@ class PostRepository @Inject()(
   def insert(post: Post): Future[Post] = {
     Future {
 
-      if (false == posts.exists(x => x.id == post.id)) {
-        posts += post
-        post
+      if (posts.exists(x => x.id == post.id)) {
+        throw new Exception("insert failed: post with an identical id already exists in posts"); 
 
       } else {
-        throw new Exception
+        posts += post
+        post
       }
     } 
   }
+
+  def 
 
   def update(post: Post): Future[Post] = {
     Future {
@@ -55,7 +57,7 @@ class PostRepository @Inject()(
           posts += post
           post
 
-        case None => throw new Exception
+        case None => throw new Exception("update failed: couldn't find a post with the specified id") 
       }
     }
   } 
@@ -67,7 +69,7 @@ class PostRepository @Inject()(
           posts -= element
           element
 
-        case None => throw new Exception
+        case None => throw new Exception("delete failed: couldn't find a post with the specified id")
       }
     }
   } 
