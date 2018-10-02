@@ -4,7 +4,6 @@ import javax.inject.Inject
 import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Request}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 class PostsController @Inject()(
                                  cc: ControllerComponents,

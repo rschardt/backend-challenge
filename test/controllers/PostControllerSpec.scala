@@ -110,8 +110,8 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
     "return the post with the matching id" in {
 
       // Create Test-Entry
-      val createRequest = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](testPost);
-      val createTestResult = route(app, createRequest).get
+      val postRequest = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](testPost);
+      val postResult = route(app, postRequest).get
 
       // Get Single
       val getSingleRequest = FakeRequest(GET, "/api/v1/posts/" + "123")
@@ -172,8 +172,8 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
     "delete the right post and try to find it after the deletion" in {
 
       // Create Test-Entry
-      val createRequest = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](testPost);
-      val postResult = route(app, createRequest).get
+      val postRequest = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](testPost);
+      val postResult = route(app, postRequest).get
 
       // Delete the Test-Entry
       val deleteRequest = FakeRequest(DELETE, "/api/v1/posts/" + "123");
