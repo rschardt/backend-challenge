@@ -56,7 +56,6 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val postRequest2 = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](element2);
       val postResult2 = route(app, postRequest2).get
 
-
       // Get all Entries and check if the ordering of the id-field is ascending
       val getAllRequest = FakeRequest(GET, "/api/v1/posts")
       val getAllResult = route(app, getAllRequest).get
@@ -65,16 +64,17 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       contentType(getAllResult) mustBe Some("application/json")
       
       val idArray = (Json.parse(contentAsString(getAllResult)) \\ "id")
-      var lastNumber = 0;
+      val isAscending : Boolean = (idArray.foldLeft(true, 0) { (prev, next) =>
 
-      for (element <- idArray) {
-      
-        val number = element.as[Int]
-        val isAscending = (lastNumber < number)
+        val number = next.as[Int]
+        if (prev._2 > number) {
+          (false, 2147483647) // 2147483647 is the max value an Int in Scala can have
+        } else {
+          (true, number)
+        }
+      })._1
 
-        isAscending mustBe true
-        if(isAscending) lastNumber = number
-      }
+      isAscending mustBe true
     }
       
 
