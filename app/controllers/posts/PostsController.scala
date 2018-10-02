@@ -2,7 +2,7 @@ package controllers.posts
 
 import javax.inject.Inject
 import play.api.libs.json.{JsError, JsValue, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Request}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, Result, Request}
 import scala.concurrent.{ExecutionContext, Future}
 
 class PostsController @Inject()(
@@ -10,6 +10,27 @@ class PostsController @Inject()(
                                  postRepository: PostRepository,
                                  implicit val executionContext: ExecutionContext
                                ) extends AbstractController(cc) {
+
+  val idAlreadyUsedMsg = "Id is already in use";
+  val postNotFoundMsg = "Post not found";
+
+
+  /**
+    * Helper to create Results
+    * TODO this Function could be refactored into a Factory
+    * TODO i know 
+    */
+  def createResult(status: Int, message: Option[String], data: Option[JsValue]) : Result = {
+
+    val statusResult = Json.toJson(StatusResult(status, message, data));
+    status match {
+
+      case OK => Ok(statusResult)
+      case NOT_FOUND => NotFound(statusResult)
+      case BAD_REQUEST => BadRequest(statusResult)
+      case _ => BadRequest(statusResult)
+    }
+  }
 
   /**
     * This takes a Json in the format of
@@ -30,18 +51,21 @@ class PostsController @Inject()(
     postResult.fold(
       errors => {
         Future {
-          BadRequest(Json.obj("status" -> BAD_REQUEST, "message" -> JsError.toJson(errors)))
+          createResult(BAD_REQUEST, Some(JsError.toJson(errors).toString()), None)
         }
       },
+
       post => {
         postRepository.insert(post).map {
-          persisted => Ok(Json.obj("status" -> OK, "data" -> Json.toJson(persisted)))
+          persisted => createResult(OK, None, Some(Json.toJson(persisted)))
 
         } recover {
           case e:Exception => 
-            BadRequest(Json.obj("status" -> BAD_REQUEST, "message" -> "Id is already in use" ))
+            createResult(BAD_REQUEST, Some(idAlreadyUsedMsg), None)
         }
-  }) }
+      })
+    }
+
 
   /**
     * This returns a Json Array with a list of all Posts.
@@ -50,8 +74,7 @@ class PostsController @Inject()(
     */
   def readAll(): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
     postRepository.findAll.map { posts =>
-      val json = Json.obj("status" -> OK, "data" -> Json.toJson(posts))
-      Ok(json)
+      createResult(OK, None, Some(Json.toJson(posts)))
     }
   }
 
@@ -67,8 +90,8 @@ class PostsController @Inject()(
     */
   def readSingle(id: Int): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
     postRepository.find(id).map { 
-      case Some(post) => Ok(Json.obj("status" -> OK, "data" -> Json.toJson(post)))
-      case None => NotFound(Json.obj("status" -> NOT_FOUND, "message" -> "Post not found" ))
+      case Some(post) => createResult(OK, None, Some(Json.toJson(post)))
+      case None => createResult(NOT_FOUND,  Some(postNotFoundMsg), None)
     }
   }
 
@@ -80,11 +103,11 @@ class PostsController @Inject()(
   def delete(id: Int): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
 
     postRepository.delete(id).map { 
-      post => Ok(Json.obj("status" -> OK, "data" -> Json.toJson(post)))
+      post => createResult(OK, None, Some(Json.toJson(post)))
 
     } recover {
       case e:Exception => 
-        NotFound(Json.obj("status" -> NOT_FOUND, "message" -> "Post not found" ))
+        createResult(NOT_FOUND,  Some(postNotFoundMsg), None)
     }
   }
 
@@ -100,7 +123,7 @@ class PostsController @Inject()(
     postResult.fold(
       errors => {
         Future {
-          BadRequest(Json.obj("status" -> BAD_REQUEST, "message" -> JsError.toJson(errors)))
+          createResult(BAD_REQUEST, Some(JsError.toJson(errors).toString()), None)
         }
       },
       
@@ -108,11 +131,11 @@ class PostsController @Inject()(
 
         val modifiedPost = Post(id, post.title, post.body)
         postRepository.update(modifiedPost).map {
-          persisted => Ok(Json.obj("status" -> OK, "data" -> Json.toJson(modifiedPost)))
+          persisted => createResult(OK, None, Some(Json.toJson(modifiedPost)))
 
         } recover {
           case e:Exception => 
-            NotFound(Json.obj("status" -> NOT_FOUND, "message" -> "Post not found" ))
+            createResult(NOT_FOUND,  Some(postNotFoundMsg), None)
         }
     }) 
   }
