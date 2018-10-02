@@ -23,18 +23,23 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
   val idExistsMsg = Json.obj("status" -> 400, "message" -> "Id is already in use" );
   val notFoundMsg = Json.obj("status" -> 404, "message" -> "Post not found" );
 
+  // Helper-Functions  
+  def tryToGetResult(futureResult: Option[scala.concurrent.Future[play.api.mvc.Result]]) = futureResult match {
+    case Some(x) => x
+    case None => throw new Exception("Server didn't responded with a Result")
+  }
 
   "CREATE POST" should {
 
     "return a 400-Error when trying to create the same element twice" in {
       val postRequest = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](testPost);
-      val postResult1 = route(app, postRequest).get
+      val postResult1 = tryToGetResult(route(app, postRequest));
 
       status(postResult1) mustBe OK
       contentType(postResult1) mustBe Some("application/json")
       contentAsString(postResult1) mustBe (Json.obj("status" -> 200, "data" -> testPost).toString)
     
-      val postResult2 = route(app, postRequest).get
+      val postResult2 = tryToGetResult(route(app, postRequest))
       status(postResult2) mustBe BAD_REQUEST
       contentType(postResult2) mustBe Some("application/json")
       contentAsString(postResult2) mustBe (idExistsMsg.toString)
@@ -51,14 +56,14 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       // Create Elements in wrong Order
       val postRequest1 = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](element1);
-      val postResult1 = route(app, postRequest1).get
+      val postResult1 = tryToGetResult(route(app, postRequest1))
 
       val postRequest2 = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](element2);
-      val postResult2 = route(app, postRequest2).get
+      val postResult2 = tryToGetResult(route(app, postRequest2))
 
       // Get all Entries and check if the ordering of the id-field is ascending
       val getAllRequest = FakeRequest(GET, "/api/v1/posts")
-      val getAllResult = route(app, getAllRequest).get
+      val getAllResult = tryToGetResult(route(app, getAllRequest))
 
       status(getAllResult) mustBe OK
       contentType(getAllResult) mustBe Some("application/json")
@@ -82,20 +87,20 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       
       // Delete all Standard-Entries
       val deleteRequest1 = FakeRequest(DELETE, "/api/v1/posts/" + "1");
-      val deleteResult1 = route(app, deleteRequest1).get
+      val deleteResult1 = tryToGetResult(route(app, deleteRequest1))
 
       status(deleteResult1) mustBe OK
       contentType(deleteResult1) mustBe Some("application/json")
 
       val deleteRequest2 = FakeRequest(DELETE, "/api/v1/posts/" + "2");
-      val deleteResult2 = route(app, deleteRequest2).get
+      val deleteResult2 = tryToGetResult(route(app, deleteRequest2))
 
       status(deleteResult2) mustBe OK
       contentType(deleteResult2) mustBe Some("application/json")
 
       // Get all Entries and check if the ordering of the id-field is ascending
       val getAllRequest = FakeRequest(GET, "/api/v1/posts")
-      val getAllResult = route(app, getAllRequest).get
+      val getAllResult = tryToGetResult(route(app, getAllRequest))
 
       status(getAllResult) mustBe OK
       contentType(getAllResult) mustBe Some("application/json")
@@ -111,11 +116,11 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       // Create Test-Entry
       val postRequest = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](testPost);
-      val postResult = route(app, postRequest).get
+      val postResult = tryToGetResult(route(app, postRequest))
 
       // Get Single
       val getSingleRequest = FakeRequest(GET, "/api/v1/posts/" + "123")
-      val readSingle = route(app, getSingleRequest).get
+      val readSingle = tryToGetResult(route(app, getSingleRequest))
 
       status(readSingle) mustBe OK
       contentType(readSingle) mustBe Some("application/json")
@@ -124,7 +129,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
     "return a 404-Error, because the post doesn't exist" in { 
       val getSingleRequest = FakeRequest(GET, "/api/v1/posts/" + "124")
-      val getSingleResult = route(app, getSingleRequest).get
+      val getSingleResult = tryToGetResult(route(app, getSingleRequest))
 
       status(getSingleResult) mustBe NOT_FOUND
       contentType(getSingleResult) mustBe Some("application/json")
@@ -142,7 +147,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       // Create Test-Entry
       val postRequest = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](testPost);
-      val postResult = route(app, postRequest).get
+      val postResult = tryToGetResult(route(app, postRequest))
 
       status(postResult) mustBe OK
       contentType(postResult) mustBe Some("application/json")
@@ -150,7 +155,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       // Update
       val putRequest = FakeRequest(PUT, "/api/v1/posts/" + "123").withHeaders("Content-type" -> "application/json").withBody[JsValue](updatedPost);
-      val putResult = route(app, putRequest).get
+      val putResult = tryToGetResult(route(app, putRequest))
 
       status(putResult) mustBe OK
       contentType(putResult) mustBe Some("application/json")
@@ -159,7 +164,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
     "return a 404-Error, because the post doesn't exist" in {
       val putRequest = FakeRequest(PUT, "/api/v1/posts/" + "200").withHeaders("Content-type" -> "application/json").withBody[JsValue](differentPost);
-      val putResult = route(app, putRequest).get
+      val putResult = tryToGetResult(route(app, putRequest))
 
       status(putResult) mustBe NOT_FOUND
       contentType(putResult) mustBe Some("application/json")
@@ -173,11 +178,11 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       // Create Test-Entry
       val postRequest = FakeRequest(POST, "/api/v1/posts").withHeaders("Content-type" -> "application/json").withBody[JsValue](testPost);
-      val postResult = route(app, postRequest).get
+      val postResult = tryToGetResult(route(app, postRequest))
 
       // Delete the Test-Entry
       val deleteRequest = FakeRequest(DELETE, "/api/v1/posts/" + "123");
-      val deleteResult = route(app, deleteRequest).get
+      val deleteResult = tryToGetResult(route(app, deleteRequest))
 
       status(deleteResult) mustBe OK
       contentType(deleteResult) mustBe Some("application/json")
@@ -185,7 +190,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       // Try to find the Test-Entry
       val getSingleRequest = FakeRequest(GET, "/api/v1/posts/" + "123")
-      val getSingleResult = route(app, getSingleRequest).get
+      val getSingleResult = tryToGetResult(route(app, getSingleRequest))
 
       status(getSingleResult) mustBe NOT_FOUND
       contentType(getSingleResult) mustBe Some("application/json")
@@ -194,7 +199,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
     "return a 404-Error, because the post doesn't exist" in {
       val deleteRequest = FakeRequest(DELETE, "/api/v1/posts/" + "500")
-      val deleteResult = route(app, deleteRequest).get
+      val deleteResult = tryToGetResult(route(app, deleteRequest))
 
       status(deleteResult) mustBe NOT_FOUND
       contentType(deleteResult) mustBe Some("application/json")
