@@ -20,8 +20,8 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
   val differentPost = Json.obj("id" -> 125, "title" -> "Test UPDATE Post", "body" -> "this post can't be found");
 
   // Error-Messages
-  val idExistsMsg = Json.obj("status" -> 400, "message" -> "Id is already in use" );
-  val notFoundMsg = Json.obj("status" -> 404, "message" -> "Post not found" );
+  val idExistsMsg = Json.obj("status" -> BAD_REQUEST, "message" -> "Id is already in use" );
+  val notFoundMsg = Json.obj("status" -> NOT_FOUND, "message" -> "Post not found" );
 
   // Helper-Functions  
   def tryToGetResult(futureResult: Option[scala.concurrent.Future[play.api.mvc.Result]]) = futureResult match {
@@ -37,7 +37,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       status(postResult1) mustBe OK
       contentType(postResult1) mustBe Some("application/json")
-      contentAsString(postResult1) mustBe (Json.obj("status" -> 200, "data" -> testPost).toString)
+      contentAsString(postResult1) mustBe (Json.obj("status" -> OK, "data" -> testPost).toString)
     
       val postResult2 = tryToGetResult(route(app, postRequest))
       status(postResult2) mustBe BAD_REQUEST
@@ -124,7 +124,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       status(readSingle) mustBe OK
       contentType(readSingle) mustBe Some("application/json")
-      contentAsString(readSingle) mustBe (Json.obj("status" -> 200, "data" -> testPost).toString)
+      contentAsString(readSingle) mustBe (Json.obj("status" -> OK, "data" -> testPost).toString)
     }
 
     "return a 404-Error, because the post doesn't exist" in { 
@@ -151,7 +151,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       status(postResult) mustBe OK
       contentType(postResult) mustBe Some("application/json")
-      contentAsString(postResult) mustBe (Json.obj("status" -> 200, "data" -> testPost).toString)
+      contentAsString(postResult) mustBe (Json.obj("status" -> OK, "data" -> testPost).toString)
 
       // Update
       val putRequest = FakeRequest(PUT, "/api/v1/posts/" + "123").withHeaders("Content-type" -> "application/json").withBody[JsValue](updatedPost);
@@ -159,11 +159,11 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       status(putResult) mustBe OK
       contentType(putResult) mustBe Some("application/json")
-      contentAsString(putResult) mustBe (Json.obj("status" -> 200, "data" -> validationPost).toString)
+      contentAsString(putResult) mustBe (Json.obj("status" -> OK, "data" -> validationPost).toString)
     }
 
     "return a 404-Error, because the post doesn't exist" in {
-      val putRequest = FakeRequest(PUT, "/api/v1/posts/" + "200").withHeaders("Content-type" -> "application/json").withBody[JsValue](differentPost);
+      val putRequest = FakeRequest(PUT, "/api/v1/posts/" + "259").withHeaders("Content-type" -> "application/json").withBody[JsValue](differentPost);
       val putResult = tryToGetResult(route(app, putRequest))
 
       status(putResult) mustBe NOT_FOUND
@@ -186,7 +186,7 @@ class PostControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       status(deleteResult) mustBe OK
       contentType(deleteResult) mustBe Some("application/json")
-      contentAsString(deleteResult) mustBe (Json.obj("status" -> 200, "data" -> testPost).toString)
+      contentAsString(deleteResult) mustBe (Json.obj("status" -> OK, "data" -> testPost).toString)
 
       // Try to find the Test-Entry
       val getSingleRequest = FakeRequest(GET, "/api/v1/posts/" + "123")

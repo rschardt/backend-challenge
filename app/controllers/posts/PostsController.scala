@@ -30,16 +30,16 @@ class PostsController @Inject()(
     postResult.fold(
       errors => {
         Future {
-          BadRequest(Json.obj("status" -> 400, "message" -> JsError.toJson(errors)))
+          BadRequest(Json.obj("status" -> BAD_REQUEST, "message" -> JsError.toJson(errors)))
         }
       },
       post => {
         postRepository.insert(post).map {
-          persisted => Ok(Json.obj("status" -> 200, "data" -> Json.toJson(persisted)))
+          persisted => Ok(Json.obj("status" -> OK, "data" -> Json.toJson(persisted)))
 
         } recover {
           case e:Exception => 
-            BadRequest(Json.obj("status" -> 400, "message" -> "Id is already in use" ))
+            BadRequest(Json.obj("status" -> BAD_REQUEST, "message" -> "Id is already in use" ))
         }
   }) }
 
@@ -50,7 +50,7 @@ class PostsController @Inject()(
     */
   def readAll(): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
     postRepository.findAll.map { posts =>
-      val json = Json.obj("status" -> 200, "data" -> Json.toJson(posts))
+      val json = Json.obj("status" -> OK, "data" -> Json.toJson(posts))
       Ok(json)
     }
   }
@@ -67,8 +67,8 @@ class PostsController @Inject()(
     */
   def readSingle(id: Int): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
     postRepository.find(id).map { 
-      case Some(post) => Ok(Json.obj("status" -> 200, "data" -> Json.toJson(post)))
-      case None => NotFound(Json.obj("status" -> 404, "message" -> "Post not found" ))
+      case Some(post) => Ok(Json.obj("status" -> OK, "data" -> Json.toJson(post)))
+      case None => NotFound(Json.obj("status" -> NOT_FOUND, "message" -> "Post not found" ))
     }
   }
 
@@ -80,11 +80,11 @@ class PostsController @Inject()(
   def delete(id: Int): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
 
     postRepository.delete(id).map { 
-      post => Ok(Json.obj("status" -> 200, "data" -> Json.toJson(post)))
+      post => Ok(Json.obj("status" -> OK, "data" -> Json.toJson(post)))
 
     } recover {
       case e:Exception => 
-        NotFound(Json.obj("status" -> 404, "message" -> "Post not found" ))
+        NotFound(Json.obj("status" -> NOT_FOUND, "message" -> "Post not found" ))
     }
   }
 
@@ -100,18 +100,19 @@ class PostsController @Inject()(
     postResult.fold(
       errors => {
         Future {
-          BadRequest(Json.obj("status" -> 400, "message" -> JsError.toJson(errors)))
+          BadRequest(Json.obj("status" -> BAD_REQUEST, "message" -> JsError.toJson(errors)))
         }
       },
+      
       post => {
 
         val modifiedPost = Post(id, post.title, post.body)
         postRepository.update(modifiedPost).map {
-          persisted => Ok(Json.obj("status" -> 200, "data" -> Json.toJson(modifiedPost)))
+          persisted => Ok(Json.obj("status" -> OK, "data" -> Json.toJson(modifiedPost)))
 
         } recover {
           case e:Exception => 
-            NotFound(Json.obj("status" -> 404, "message" -> "Post not found" ))
+            NotFound(Json.obj("status" -> NOT_FOUND, "message" -> "Post not found" ))
         }
     }) 
   }
